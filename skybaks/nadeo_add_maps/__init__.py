@@ -25,7 +25,7 @@ class NadeoAddMaps(AppConfig):
     async def on_start(self) -> None:
         await self.instance.command_manager.register(
             Command(command="add", aliases=[], target=self.add_nadeoservices_maps, namespace="nadeo",
-                    description="Add maps from Nadeo servers using map UIDs")
+                    perms="mx:add_remote", admin=True, description="Add maps from Nadeo servers using map UIDs")
                 .add_param(name="map_uids", nargs="*", type=str, required=True)
         )
 
@@ -83,8 +83,12 @@ class NadeoAddMaps(AppConfig):
             logger.exception(e)
             infos = list()
 
+        if len(infos) == 0:
+            await self.instance.chat("$ff0Error: API issue or map(s) not found, skipping download", player.login)
+
         try:
             if not await self.instance.storage.driver.exists(os.path.join("UserData", "Maps", "PyPlanet-NadeoServices")):
+                logger.info("Creating folder UserData/Maps/PyPlanet-NadeoServices/")
                 await self.instance.storage.driver.mkdir(os.path.join("UserData", "Maps", "PyPlanet-NadeoServices"))
         except Exception as e:
             logger.exception(e)
@@ -119,7 +123,7 @@ class NadeoAddMaps(AppConfig):
                     raise Exception("Unknown error while adding the map")
             except Exception as e:
                 logger.error(e)
-                await self.instance.chat("$ff0Error: Can't add map $<$fff%s$>, Error: %s" % (map_info["name"], str(e)))
+                await self.instance.chat("$ff0Error: Can't add map $<$fff%s$>, Error: %s" % (map_info["name"], str(e)), player.login)
         
         try:
             await self.instance.map_manager.update_list(full_update=True)

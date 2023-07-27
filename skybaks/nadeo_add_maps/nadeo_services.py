@@ -57,6 +57,7 @@ class NadeoServicesApi:
             self.token_expire = datetime(1970, 1, 1)
             self.token_refresh = datetime(1970, 1, 1)
         else:
+            logger.info("Authentication success with NadeoServices")
             self.json_web_token = json.loads(await response.content.read())
             self.token_expire, self.token_refresh = self.get_times(self.json_web_token)
 
@@ -75,16 +76,19 @@ class NadeoServicesApi:
             "Authorization": "nadeo_v1 t=%s" % (self.json_web_token["accessToken"],),
             "Content-Type": "application/json"
         }
-        response = await self.session.get(MAP_LOOKUP_URL + ",".join(map_uids), headers=headers)
+        req_url: str = MAP_LOOKUP_URL + ",".join(map_uids)
+        logger.info("Sending map infos request to: %s" % (req_url,))
+        response = await self.session.get(req_url, headers=headers)
         if response.status != 200:
-            logger.error("Error when requesting map infos")
-        else:
-            return json.loads(await response.content.read())
+            raise Exception("Error when requesting map infos")
+        logger.info("Map infos response success")
+        return json.loads(await response.content.read())
 
     async def download(self, url: str) -> None:
+        logger.info("Downloading map from: %s" % (url,))
         response = await self.session.get(url)
         if response.status != 200:
-            logger.error("Error when downloading map from " + str(url))
+            raise Exception("Error when downloading map from " + str(url))
         return response
 
     @staticmethod
